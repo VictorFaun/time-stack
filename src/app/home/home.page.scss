@@ -10,7 +10,7 @@
 }
 
 .card {
-  background-color: var(--ion-background-color-step-50);
+  background-color: var(--ion-background-color-step-50); // Color de fondo de las tarjetas
   margin: 20px;
   border-radius: 10px;
   padding: 15px;
@@ -18,20 +18,20 @@
   padding-right: 30px;
   font-size: x-large;
   display: flex;
-  justify-content: space-between;
+  justify-content: space-between; // Espaciar el texto y los botones
 }
 
 .text-ellipsis {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: nowrap; // Evitar que el texto se rompa en varias líneas
+  overflow: hidden; // Ocultar el texto que se desborda
+  text-overflow: ellipsis; // Mostrar puntos suspensivos para indicar texto oculto
 }
 
 .buttons {
   margin-left: 5px;
   display: flex;
   justify-content: center;
-  flex-direction: column;
+  flex-direction: column; // Alinear los botones verticalmente (aunque solo hay uno actualmente)
 }
 
 .button {
@@ -42,12 +42,12 @@
 .time-picker-wrapper {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: center; // Centrar los selectores de tiempo
 }
 
 .separator {
   font-size: 35px;
-  color: var(--ion-color-medium);
+  color: var(--ion-color-medium); // Color del separador ":"
   margin-top: 0px;
   font-weight: 600;
 }
@@ -61,16 +61,25 @@
 }
 
 .modal {
-  --height: auto;
-  align-items: end;
+  --height: auto; // Ajustar la altura del modal al contenido
+  align-items: end; // Mostrar el modal desde la parte inferior
 }
 
+/* Animación de latido para la alarma */
 @keyframes latido {
-  0% { transform: scale(.9); }
-  50% { transform: scale(1); }
-  100% { transform: scale(.9); }
+  0% {
+    transform: scale(0.9);
+  }
+
+  50% {
+    transform: scale(1);
+  }
+
+  100% {
+    transform: scale(0.9);
+  }
 }
 
 .alarma-pulso {
-  animation: latido 1s infinite;
+  animation: latido 1s infinite; // Aplicar la animación al fondo de la alarma
 }

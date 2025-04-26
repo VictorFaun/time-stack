@@ -7,35 +7,54 @@ import { IonModal, Platform } from '@ionic/angular';
   styleUrls: ['home.page.scss'],
   standalone: false,
 })
-export class HomePage  implements OnInit{
+export class HomePage implements OnInit {
+  // #region Propiedades
 
-  ngOnInit() {
-    // Cargar los temporizadores desde el localStorage cuando el componente se inicializa
-    this.cargarTemporizadores();
-  }
+  // Array para almacenar los temporizadores creados por el usuario
+  temporizadores: any = [];
 
-  temporizadores: any = []
-  @ViewChild('newTimerModal') modal: IonModal | undefined;
-  @ViewChild('timersModal') modal2: IonModal | undefined;
+  // Referencias a los componentes IonModal en la plantilla HTML
+  @ViewChild('newTimerModal') newTimerModal: IonModal | undefined; // Modal para crear un nuevo temporizador
+  @ViewChild('timersModal') runningTimersModal: IonModal | undefined; // Modal para mostrar los temporizadores en ejecución
 
+  // Variables para el formulario de creación de un nuevo temporizador
   timerName: string = '';
-
   minutes: number = 0;
   seconds: number = 0;
 
+  // Índice del temporizador actual que se está mostrando en el modal de ejecución
   indexModal: number = 0;
 
-  error_modal: any = false
+  // Bandera para mostrar errores en el modal de nuevo temporizador
+  error_modal: boolean = false;
 
-  play: any = false
+  // Bandera para controlar si el temporizador actual está en ejecución
+  play: boolean = false;
 
-  intervaloActualizador: any;
-  inicioTiempo: number = 0;
-  intervaloAlarma: any;
+  // Variables para la lógica del temporizador en ejecución
+  intervaloActualizador: any; // Intervalo para actualizar la visualización del tiempo
+  inicioTiempo: number = 0; // Marca de tiempo del inicio del temporizador
+  intervaloAlarma: any; // Intervalo para controlar la alarma
 
-  constructor(private platform: Platform) { }
+  // Variable para controlar el estado y la duración de la alarma (false si no hay alarma)
+  alarma: number | false = false;
 
-  formatearTiempo(segundos: any) {
+  // Objeto de audio para reproducir el sonido de la alarma
+  private alarmaSonido: HTMLAudioElement | null = null;
+
+  // #endregion
+
+  constructor(private platform: Platform) {}
+
+  // Método que se ejecuta al inicializar el componente
+  ngOnInit() {
+    this.cargarTemporizadores(); // Cargar los temporizadores guardados desde el almacenamiento local
+  }
+
+  // #region Métodos de Formateo de Tiempo
+
+  // Formatea el tiempo en segundos a un formato HH:MM:SS o MM:SS
+  formatearTiempo(segundos: number): string {
     const horas = Math.floor(segundos / 3600);
     const minutos = Math.floor((segundos % 3600) / 60);
     const segundosRestantes = segundos % 60;
@@ -44,226 +63,235 @@ export class HomePage  implements OnInit{
     const minutosStr = minutos.toString().padStart(2, '0');
     const segundosStr = segundosRestantes.toString().padStart(2, '0');
 
-    if (horas > 0) {
-      return `${horasStr} : ${minutosStr} : ${segundosStr}`;
-    } else {
-      return `${minutosStr} : ${segundosStr}`;
-    }
+    return horas > 0 ? `${horasStr} : ${minutosStr} : ${segundosStr}` : `${minutosStr} : ${segundosStr}`;
   }
-  formatearTiempoMin(segundos: any) {
-    const horas = Math.floor(segundos / 3600);
+
+  // Formatea el tiempo en segundos para mostrar solo los minutos (con formato de dos dígitos)
+  formatearTiempoMin(segundos: number): string {
     const minutos = Math.floor((segundos % 3600) / 60);
-    const segundosRestantes = segundos % 60;
-
-    const horasStr = horas.toString().padStart(2, '0');
-    const minutosStr = minutos.toString().padStart(2, '0');
-    const segundosStr = segundosRestantes.toString().padStart(2, '0');
-
-    if (horas > 0) {
-      return minutosStr;
-    } else {
-      return minutosStr;
-    }
-  }
-  formatearTiempoSeg(segundos: any) {
-    const horas = Math.floor(segundos / 3600);
-    const minutos = Math.floor((segundos % 3600) / 60);
-    const segundosRestantes = segundos % 60;
-
-    const horasStr = horas.toString().padStart(2, '0');
-    const minutosStr = minutos.toString().padStart(2, '0');
-    const segundosStr = segundosRestantes.toString().padStart(2, '0');
-
-    if (horas > 0) {
-      return segundosStr;
-    } else {
-      return segundosStr;
-    }
+    return minutos.toString().padStart(2, '0');
   }
 
+  // Formatea el tiempo en segundos para mostrar solo los segundos (con formato de dos dígitos)
+  formatearTiempoSeg(segundos: number): string {
+    const segundosRestantes = segundos % 60;
+    return segundosRestantes.toString().padStart(2, '0');
+  }
+
+  // #endregion
+
+  // #region Métodos del Modal de Nuevo Temporizador
+
+  // Presenta el modal para crear un nuevo temporizador
   async presentModal() {
-    if (this.modal) {
+    if (this.newTimerModal) {
+      // Reiniciar los valores del formulario
       this.timerName = '';
       this.minutes = 0;
       this.seconds = 0;
+      this.error_modal = false;
 
-      this.error_modal = false
+      await this.newTimerModal.present();
 
-      await this.modal.present();
+      // Escuchar el evento de cierre del modal
+      const { data, role } = await this.newTimerModal.onDidDismiss();
+      console.log('Modal de nuevo temporizador cerrado con:', { data, role });
 
-      // Aquí se escucha el cierre CADA VEZ
-      const { data, role } = await this.modal.onDidDismiss();
-      console.log('Modal cerrado con:', { data, role });
-
+      // Si el usuario confirma y hay datos, agregar el nuevo temporizador
       if (role === 'confirm' && data) {
         this.temporizadores.push({
           nombre: data.name,
-          tiempo: data.duration
+          tiempo: data.duration,
+          tiempoAux: data.duration, // Inicializar el tiempo auxiliar para el conteo
         });
-        this.guardarTemporizadores()
+        this.guardarTemporizadores(); // Guardar la lista de temporizadores
       }
     }
   }
 
-  async presentModal2() {
-    if (this.modal2) {
-      if (this.temporizadores.length == 0) return
-      this.indexModal = 0;
-      this.temporizadores[0].tiempoAux = this.temporizadores[0].tiempo
-      this.iniciarTemporizador(true)
-
-
-      await this.modal2.present();
-
-      // Aquí se escucha el cierre CADA VEZ
-      const { data, role } = await this.modal2.onDidDismiss();
-      this.detenerTemporizador()
-      console.log('Modal cerrado con:', { data, role });
+  // Cierra el modal de nuevo temporizador
+  async closeModal() {
+    if (this.newTimerModal) {
+      await this.newTimerModal.dismiss(null, 'cancel');
     }
   }
 
-  iniciarTemporizador(play: any) {
+  // Inicia el proceso de creación y guardado de un nuevo temporizador
+  async startTimer() {
+    // Validar que se haya ingresado un nombre y un tiempo mayor a cero
+    if (this.timerName && (this.minutes * 60 + this.seconds) > 0) {
+      // Cerrar el modal y pasar los datos del nuevo temporizador
+      if (this.newTimerModal) {
+        this.newTimerModal.dismiss(
+          {
+            name: this.timerName,
+            duration: this.minutes * 60 + this.seconds,
+          },
+          'confirm'
+        );
+      }
+    } else {
+      this.error_modal = true; // Mostrar error si no se cumplen las validaciones
+    }
+  }
 
+  // #endregion
+
+  // #region Métodos del Modal de Temporizadores en Ejecución
+
+  // Presenta el modal para mostrar y controlar los temporizadores en ejecución
+  async presentModal2() {
+    if (this.runningTimersModal) {
+      // Si no hay temporizadores, no hacer nada
+      if (this.temporizadores.length === 0) return;
+
+      this.indexModal = 0; // Iniciar con el primer temporizador
+      this.temporizadores[0].tiempoAux = this.temporizadores[0].tiempo; // Inicializar el tiempo auxiliar
+      this.iniciarTemporizador(true); // Iniciar el temporizador automáticamente al abrir el modal
+
+      await this.runningTimersModal.present();
+
+      // Escuchar el evento de cierre del modal
+      const { data, role } = await this.runningTimersModal.onDidDismiss();
+      this.detenerTemporizador(); // Detener el temporizador al cerrar el modal
+      console.log('Modal de temporizadores en ejecución cerrado con:', { data, role });
+    }
+  }
+
+  // Cierra el modal de temporizadores en ejecución
+  async closeModal2() {
+    if (this.runningTimersModal) {
+      await this.runningTimersModal.dismiss(null, 'cancel');
+      this.detenerTemporizador(); // Asegurarse de detener el temporizador al cerrar
+    }
+  }
+
+  // #endregion
+
+  // #region Lógica del Temporizador
+
+  // Inicia o reanuda el temporizador actual
+  iniciarTemporizador(play: boolean) {
     this.play = play;
-    // Guardamos la fecha actual en milisegundos
-    this.inicioTiempo = Date.now();
+    this.inicioTiempo = Date.now(); // Guardar el tiempo de inicio
 
-    // Limpiamos si había algún intervalo anterior
+    // Limpiar cualquier intervalo anterior para evitar conflictos
     if (this.intervaloActualizador) {
       clearInterval(this.intervaloActualizador);
     }
 
-    // Cada 200ms revisamos si ya pasó 1 segundo real
+    // Establecer un intervalo para actualizar el tiempo cada 200ms
     this.intervaloActualizador = setInterval(() => {
-      if (!this.play) return; // Solo si play es true
-      if (this.temporizadores[this.indexModal].tiempoAux <= 0 && !this.alarma && this.temporizadores.length>this.indexModal+1) {
-        this.inicioAlarma()
-        return;
-      }
-      if (this.temporizadores[this.indexModal].tiempoAux <= 0 && !this.alarma && !(this.temporizadores.length>this.indexModal+1)) {
-        this.closeModal2()
-        return;
-      }
-      if (this.temporizadores[this.indexModal].tiempoAux <= 0) {
-        return;
-      } // Solo si el tiempo aún es mayor a 0
-      const ahora = Date.now();
-      const diferencia = (ahora - this.inicioTiempo) / 1000; // Diferencia en segundos
+      if (!this.play) return; // No actualizar si el temporizador está pausado
 
-      if (diferencia >= 1) {
-        // Restamos 1 segundo al tiempo
-        this.temporizadores[this.indexModal].tiempoAux -= 1;
-        // Actualizamos inicioTiempo para medir el próximo segundo
-        this.inicioTiempo = ahora;
+      const tiempoAuxActual = this.temporizadores[this.indexModal]?.tiempoAux;
+
+      // Verificar si el tiempo ha llegado a cero y si no hay una alarma activa
+      if (tiempoAuxActual <= 0 && !this.alarma) {
+        // Si hay más temporizadores en la lista, iniciar la alarma
+        if (this.temporizadores.length > this.indexModal + 1) {
+          this.inicioAlarma();
+          return;
+        } else {
+          // Si es el último temporizador, cerrar el modal
+          this.closeModal2();
+          return;
+        }
+      }
+
+      // Si el tiempo aún es mayor a cero, calcular la diferencia
+      if (tiempoAuxActual > 0) {
+        const ahora = Date.now();
+        const diferencia = (ahora - this.inicioTiempo) / 1000; // Diferencia en segundos
+
+        // Si ha pasado al menos 1 segundo real
+        if (diferencia >= 1) {
+          this.temporizadores[this.indexModal].tiempoAux -= 1; // Decrementar el tiempo restante
+          this.inicioTiempo = ahora; // Actualizar el tiempo de inicio para el próximo segundo
+        }
       }
     }, 200);
   }
 
+  // Detiene el temporizador actual
   detenerTemporizador() {
     this.play = false;
-    this.detenerAlarma()
+    this.detenerAlarma(); // Detener cualquier alarma activa
     if (this.intervaloActualizador) {
       clearInterval(this.intervaloActualizador);
       this.intervaloActualizador = null;
     }
   }
 
+  // #endregion
 
-  async startTimer() {
-    console.log(this.modal)
-    if (this.timerName && ((this.minutes * 60) + this.seconds) > 0) {
-      // Aquí puedes procesar la creación del temporizador con los datos ingresados
+  // #region Control de la Lista de Temporizadores
 
-      // Después de crear el temporizador, puedes cerrar el modal
-      if (this.modal) {
-        this.modal.dismiss({
-          name: this.timerName,
-          duration: ((this.minutes * 60) + this.seconds)
-        }, 'confirm'); // El segundo argumento es el 'role'
-      }
-    } else {
-      this.error_modal = true;
-    }
-  }
-
-  async closeModal() {
-    if (this.modal) {
-
-      await this.modal.dismiss(null, 'cancel');
-    }
-  }
-
-  async closeModal2() {
-    if (this.modal2) {
-      await this.modal2.dismiss(null, 'cancel');
-      this.detenerTemporizador()
-    }
-  }
-  eliminar(pos: any) {
+  // Elimina un temporizador de la lista
+  eliminar(pos: number) {
     this.temporizadores.splice(pos, 1);
-    
-    this.guardarTemporizadores()
+    this.guardarTemporizadores(); // Guardar la lista actualizada
   }
 
+  // Muestra el siguiente temporizador en el modal de ejecución
   siguiente() {
-    console.log("asda")
-    this.detenerAlarma()
+    this.detenerAlarma(); // Detener la alarma antes de pasar al siguiente
     if (this.temporizadores.length > this.indexModal + 1) {
-      this.indexModal = this.indexModal + 1
-      this.temporizadores[this.indexModal].tiempoAux = this.temporizadores[this.indexModal].tiempo
-      this.iniciarTemporizador(this.play)
+      this.indexModal++;
+      this.temporizadores[this.indexModal].tiempoAux = this.temporizadores[this.indexModal].tiempo; // Reiniciar el tiempo auxiliar
+      this.iniciarTemporizador(this.play); // Continuar o iniciar el temporizador
     }
   }
+
+  // Muestra el temporizador anterior en el modal de ejecución
   anterior() {
-    this.detenerAlarma()
-    if (0 <= this.indexModal - 1) {
-      this.indexModal = this.indexModal - 1
-      this.temporizadores[this.indexModal].tiempoAux = this.temporizadores[this.indexModal].tiempo
-      this.iniciarTemporizador(this.play)
+    this.detenerAlarma(); // Detener la alarma antes de pasar al anterior
+    if (this.indexModal > 0) {
+      this.indexModal--;
+      this.temporizadores[this.indexModal].tiempoAux = this.temporizadores[this.indexModal].tiempo; // Reiniciar el tiempo auxiliar
+      this.iniciarTemporizador(this.play); // Continuar o iniciar el temporizador
     }
   }
 
-  alarma: number | false = false;
+  // #endregion
 
+  // #region Lógica de la Alarma
+
+  // Inicia la secuencia de la alarma
   inicioAlarma() {
-    console.log("ala2");
-    
-    // Cargar el sonido si no está cargado
+    console.log('Alarma activada');
+
+    // Cargar el sonido de la alarma si no está cargado
     if (!this.alarmaSonido) {
-      this.alarmaSonido = new Audio('assets/alarma.mp3'); // Asegúrate de tener este archivo en tus assets
+      this.alarmaSonido = new Audio('assets/alarma.mp3'); // Asegúrate de tener el archivo en la ruta correcta
       this.alarmaSonido.load();
     }
-  
-    // Si ya hay una alarma corriendo, la limpiamos
+
+    // Limpiar cualquier intervalo de alarma anterior
     if (this.intervaloAlarma) {
       clearInterval(this.intervaloAlarma);
       this.intervaloAlarma = null;
     }
-  
-    // Seteamos alarma a 5
-    this.alarma = 5;
-  
+
+    this.alarma = 5; // Establecer la duración de la alarma en segundos
+
     this.reproducirSonido();
-    this.vibrarTelefono();
-  
-    // Creamos el intervalo que baja alarma cada segundo
+
+    // Intervalo para decrementar el tiempo de la alarma cada segundo
     this.intervaloAlarma = setInterval(() => {
-      console.log("ala");
-  
+      console.log('Tiempo de alarma restante:', this.alarma);
       if (this.alarma) {
-        this.alarma -= 1;
-  
+        this.alarma--;
         if (this.alarma <= 0) {
-          // Cuando llega a 0, llamamos a siguiente
-          this.siguiente();
-          this.detenerAlarma();
+          this.siguiente(); // Pasar al siguiente temporizador al finalizar la alarma
+          this.detenerAlarma(); // Detener la alarma
         }
       }
     }, 1000);
   }
-  
+
+  // Detiene la alarma
   detenerAlarma() {
-    // Función para limpiar todo cuando termina o se cancela la alarma
     if (this.intervaloAlarma) {
       clearInterval(this.intervaloAlarma);
       this.intervaloAlarma = null;
@@ -271,50 +299,49 @@ export class HomePage  implements OnInit{
     this.alarma = false;
     if (this.alarmaSonido) {
       this.alarmaSonido.pause();
-      this.alarmaSonido.currentTime = 0;
+      this.alarmaSonido.currentTime = 0; // Reiniciar la posición del sonido
     }
   }
-  
-  // Nueva función para reproducir sonido
+
+  // Reproduce el sonido de la alarma
   private reproducirSonido() {
     if (this.alarmaSonido) {
       this.alarmaSonido.currentTime = 0; // Reiniciar el sonido
-      this.alarmaSonido.play().catch(err => {
-        console.warn('No se pudo reproducir el sonido:', err);
+      this.alarmaSonido.play().catch((err) => {
+        console.warn('Error al reproducir el sonido de la alarma:', err);
       });
     }
   }
-  
-  // Nueva función para vibrar
-  private vibrarTelefono() {
-    if (navigator.vibrate) {
-      navigator.vibrate([500, 200, 500]); // Vibrar 500ms, pausa 200ms, vibrar 500ms
-    }
-  }
 
-  private alarmaSonido: HTMLAudioElement | null = null;
+  // #endregion
 
+  // #region Almacenamiento Local
+
+  // Guarda la lista de temporizadores en el almacenamiento local
   guardarTemporizadores() {
     try {
       const data = JSON.stringify(this.temporizadores);
       localStorage.setItem('temporizadores', data);
-      console.log('Temporizadores guardados.');
+      console.log('Temporizadores guardados en el localStorage.');
     } catch (error) {
-      console.error('Error al guardar temporizadores:', error);
+      console.error('Error al guardar los temporizadores:', error);
     }
   }
-  
+
+  // Carga la lista de temporizadores desde el almacenamiento local
   cargarTemporizadores() {
     try {
       const data = localStorage.getItem('temporizadores');
       if (data) {
         this.temporizadores = JSON.parse(data);
-        console.log('Temporizadores cargados.');
+        console.log('Temporizadores cargados desde el localStorage.');
       } else {
-        console.log('No hay temporizadores guardados.');
+        console.log('No se encontraron temporizadores en el localStorage.');
       }
     } catch (error) {
-      console.error('Error al cargar temporizadores:', error);
+      console.error('Error al cargar los temporizadores:', error);
     }
   }
+
+  // #endregion
 }
