@@ -1,20 +1,133 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>
-      Blank
-    </ion-title>
-  </ion-toolbar>
-</ion-header>
-
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Blank</ion-title>
-    </ion-toolbar>
-  </ion-header>
-
-  <div id="container">
-    <strong>Ready to create an app?</strong>
-    <p>Start with Ionic <a target="_blank" rel="noopener noreferrer" href="https://ionicframework.com/docs/components">UI Components</a></p>
+<ion-content [scrollY]="false" style="--padding-top: 25px;">
+  <div class="titulo">
+    TimeStack
   </div>
+  <div>
+
+    <div class="sub-titulo">
+      Temporizadores
+    </div>
+
+    <div *ngIf="temporizadores.length ==0" style="font-size: x-small;text-align: center;margin-top: 20px;">
+      sin temporizadores :'(
+    </div>
+    <div style="height: calc(100vh - 85px - 22px - 40px);overflow-y: auto;">
+      <div *ngFor="let temporizador of temporizadores;index as i;">
+        <div class="card">
+          <div class="text-ellipsis">
+            {{temporizador.nombre}}
+            <div>
+              {{formatearTiempo(temporizador.tiempo)}}
+            </div>
+          </div>
+          <div class="buttons">
+            <div class="button">
+              <ion-button color="danger" (click)="eliminar(i)" fill="clear"
+                style="--padding-top: 0px;--padding-bottom: 0px;--padding-start: 0px;--padding-end: 0px;font-size: 20px;">
+                <ion-icon name="trash-outline"></ion-icon>
+              </ion-button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <ion-button (click)="presentModal()" color="light" shape="round"
+    style="position: absolute;bottom: 40px;right: 40px;font-size: 30px;--padding-top: 5px;--padding-bottom: 5px;--padding-start: 5px;--padding-end: 5px;">
+    <ion-icon name="add-outline" style="color: var(--ion-color-primary);margin-left: 0px;"></ion-icon>
+  </ion-button>
+
+  <ion-button (click)="presentModal2()" color="light" shape="round"
+    style="position: absolute;bottom: 40px;left: 40px;font-size: 30px;--padding-top: 5px;--padding-bottom: 5px;--padding-start: 5px;--padding-end: 2px;">
+    <ion-icon name="play" style="color: var(--ion-color-primary);margin-left: 3px;"></ion-icon>
+  </ion-button>
 </ion-content>
+
+<ion-modal #newTimerModal class="modal">
+  <ng-template>
+    <ion-header>
+      <ion-toolbar>
+        <ion-title>Nuevo Temporizador</ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="closeModal()">Cerrar</ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+    <div class="ion-padding">
+      <ion-item>
+        <ion-label position="floating">Nombre</ion-label>
+        <ion-input [(ngModel)]="timerName"></ion-input>
+      </ion-item>
+
+      <div class="time-picker-wrapper">
+        <app-time-picker-input [(value)]="minutes"></app-time-picker-input>
+        <div class="separator">:</div>
+        <app-time-picker-input [(value)]="seconds"></app-time-picker-input>
+      </div>
+
+      <ion-button expand="block" fill="clear" (click)="startTimer()">Guardar</ion-button>
+
+      <p *ngIf="error_modal" style="color: var(--ion-color-danger);text-align: center; margin: 0px;"><ion-icon
+          name="warning-outline"></ion-icon> Por favor, ingresa un nombre y un tiempo válido.</p>
+    </div>
+  </ng-template>
+</ion-modal>
+
+
+
+<ion-modal #timersModal>
+  <ng-template>
+    <ion-header>
+      <ion-toolbar style="padding-top: 25px;">
+        <ion-title>{{temporizadores[indexModal].nombre}}</ion-title>
+        <ion-buttons slot="start">
+          <ion-button (click)="closeModal2()"><ion-icon name="chevron-back-outline"></ion-icon></ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+    <ion-content class="ion-padding">
+      <div style="display: flex;justify-content: center;align-items: center;height: calc(100% - 55px - 40px);font-size: 80px;">
+        <div style="width: 120px; text-align: center;">{{formatearTiempoMin(temporizadores[indexModal].tiempoAux||0)}}
+        </div>
+        <div style="    margin-bottom: 12px;">:</div>
+        <div style="width: 120px; text-align: center;">{{formatearTiempoSeg(temporizadores[indexModal].tiempoAux||0)}}
+        </div>
+      </div>
+
+      <div *ngIf="alarma" style="position: absolute;top: 0px;left: 0px; display: flex;justify-content: center;align-items: center;width: 100%;height: calc(100% - 55px - 40px);">
+        <div class="alarma-pulso" style="position: relative;background-color: var(--ion-color-danger);opacity: .5;border-radius: 50%; width: 95vw;height: 95vw;">
+          
+          <div style="position: absolute;width: 100%;text-align: center;bottom: 30px; color: var(--ion-background-color); font-size: 30px;">{{ alarma }}</div>
+          <div style="position: absolute;width: 100%;text-align: center;top: 30px; color: var(--ion-background-color); font-size: 30px;">
+            <ion-icon name="alarm-outline"></ion-icon>
+          </div>
+      
+        </div>
+      </div>
+
+
+      <div style="position: absolute;bottom: 40px; width: calc(100% - 16px - 16px );display: flex;justify-content: space-between;padding-left: 24px; padding-right: 24px;">
+
+        <ion-button (click)="anterior()" color="light" shape="round"
+        style="font-size: 30px;--padding-top: 5px;--padding-bottom: 5px;--padding-start: 3px;--padding-end: 5px;">
+        <ion-icon name="play-back" style="color: var(--ion-color-primary);margin-right: 2px;"></ion-icon>
+      </ion-button>
+
+      <ion-button *ngIf="play" (click)="detenerTemporizador()" color="light" shape="round"
+        style="font-size: 30px;--padding-top: 5px;--padding-bottom: 5px;--padding-start: 5px;--padding-end: 5px;">
+        <ion-icon name="pause" style="color: var(--ion-color-primary);margin-left: 0px;"></ion-icon>
+      </ion-button>
+      <ion-button *ngIf="!play" (click)="iniciarTemporizador(true) " color="light" shape="round"
+        style="font-size: 30px;--padding-top: 5px;--padding-bottom: 5px;--padding-start: 5px;--padding-end: 2px;">
+        <ion-icon name="play" style="color: var(--ion-color-primary);margin-left: 3px;"></ion-icon>
+      </ion-button>
+
+      <ion-button (click)="siguiente()" color="light" shape="round"
+      style="font-size: 30px;--padding-top: 5px;--padding-bottom: 5px;--padding-start: 5px;--padding-end: 3px;">
+      <ion-icon name="play-forward" style="color: var(--ion-color-primary);margin-left: 2px;"></ion-icon>
+    </ion-button>
+      </div>
+    </ion-content>
+  </ng-template>
+</ion-modal>

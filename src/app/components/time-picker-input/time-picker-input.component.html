@@ -1,0 +1,23 @@
+<div class="time-picker-container">
+  <span class="time-picker-label">{{ label }}</span>
+  <div #container class="picker-wheel">
+    <!-- Selection highlight -->
+    <div class="selection-highlight"></div>
+    
+    <!-- Top gradient overlay -->
+    <div class="gradient-overlay top"></div>
+    
+    <!-- Bottom gradient overlay -->
+    <div class="gradient-overlay bottom"></div>
+    
+    <div class="numbers-container">
+      <div *ngFor="let num of getAdjacentNumbers(value, 3); let i = index; trackBy: trackByFn"
+           class="number-item"
+           [class.current]="i === 3"
+           [style.transform]="'translateY(' + ((i - 3) * 40) + 'px) rotateX(' + ((i - 3) * 22.5) + 'deg) scale(' + (i === 3 ? 1 : 0.9) + ')'"
+           [style.opacity]="i === 3 ? 1 : mathMax(0.2, 1 - mathAbs(3 - i) * 0.2)">
+        {{ num.toString().padStart(2, '0') }}
+      </div>
+    </div>
+  </div>
+</div>

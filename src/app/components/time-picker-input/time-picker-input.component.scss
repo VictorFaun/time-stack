@@ -1,0 +1,81 @@
+:host {
+    display: block;
+  }
+  
+  .time-picker-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    
+    .time-picker-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--ion-color-medium);
+      margin-bottom: 8px;
+    }
+  }
+  
+  .picker-wheel {
+    position: relative;
+    width: 64px;
+    height: 180px;
+    overflow: hidden;
+    touch-action: none;
+    
+    .selection-highlight {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 40px;
+      transform: translateY(-50%);
+      //background: var(--ion-color-primary-tint);
+      border-radius: 8px;
+      opacity: 0.2;
+      pointer-events: none;
+    }
+    
+    .gradient-overlay {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 60px;
+      pointer-events: none;
+      z-index: 10;
+      
+      &.top {
+        top: 0;
+        background: linear-gradient(to bottom, var(--ion-background-color) 20%, transparent);
+      }
+      
+      &.bottom {
+        bottom: 0;
+        background: linear-gradient(to top, var(--ion-background-color) 20%, transparent);
+      }
+    }
+    
+    .numbers-container {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 38%;
+      transform: translateY(-50%);
+      
+      .number-item {
+        position: absolute;
+        width: 100%;
+        text-align: center;
+        transition: all 200ms;
+        user-select: none;
+        transform-origin: center;
+        font-size: 30px;
+        color: var(--ion-color-medium);
+        
+        &.current {
+          font-weight: 300;
+          color: var(--ion-color-dark);
+        }
+      }
+    }
+  }
+  

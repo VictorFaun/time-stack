@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { HomePage } from './home.page';
 
 import { HomePageRoutingModule } from './home-routing.module';
+import { TimePickerInputComponent } from "../components/time-picker-input/time-picker-input.component";
 
 
 @NgModule({
@@ -12,8 +13,9 @@ import { HomePageRoutingModule } from './home-routing.module';
     CommonModule,
     FormsModule,
     IonicModule,
-    HomePageRoutingModule
-  ],
+    HomePageRoutingModule,
+    TimePickerInputComponent
+],
   declarations: [HomePage]
 })
 export class HomePageModule {}
